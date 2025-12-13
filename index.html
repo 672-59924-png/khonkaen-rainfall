@@ -1,111 +1,88 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ปริมาณน้ำฝน จังหวัดขอนแก่น</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Khon Kaen Rainfall</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, sans-serif;
       background: #f4f6f8;
       margin: 0;
       padding: 20px;
     }
-    h1 {
-      margin-bottom: 4px;
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .subtitle {
-      color: #555;
-      margin-bottom: 20px;
+    select {
+      padding: 6px;
+      font-size: 14px;
     }
     .card {
-      background: white;
-      border-radius: 12px;
+      background: #fff;
       padding: 16px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: 8px 10px;
-      border-bottom: 1px solid #eee;
-      text-align: center;
-    }
-    th {
-      background: #f0f2f5;
+      border-radius: 10px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>ปริมาณน้ำฝน จังหวัดขอนแก่น</h1>
-  <div class="subtitle">ตัวอย่างหน้าเว็บแสดงข้อมูลคล้าย dane.meteomodel.pl</div>
 
-  <div class="card">
-    <h3>กราฟปริมาณน้ำฝน (มม.) รายวัน</h3>
-    <canvas id="rainChart" height="100"></canvas>
-  </div>
+<div class="top">
+  <h1 id="title">Rainfall in Khon Kaen</h1>
+  <select id="lang" onchange="setLang(this.value)">
+    <option value="en">English</option>
+    <option value="th">ไทย</option>
+    <option value="ja">日本語</option>
+    <option value="zh">中文</option>
+  </select>
+</div>
 
-  <div class="card">
-    <h3>ตารางข้อมูลน้ำฝน</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>วันที่</th>
-          <th>ปริมาณน้ำฝน (มม.)</th>
-        </tr>
-      </thead>
-      <tbody id="rainTable"></tbody>
-    </table>
-  </div>
+<div class="card">
+  <p id="subtitle">Rainfall data (last 2 years)</p>
+  <canvas id="rainChart"></canvas>
+</div>
 
-  <script>
-    // ===== ตัวอย่างข้อมูลย้อนหลัง 2 ปี (ข้อมูลจำลอง) =====
-    // หมายเหตุ: ภายหลังสามารถแทนที่ด้วยข้อมูลจริงจาก API หรือไฟล์ CSV
-    const rainfallData = [];
-    const startDate = new Date();
-    startDate.setFullYear(startDate.getFullYear() - 2);
+<script>
+const text = {
+  en: {
+    title: "Rainfall in Khon Kaen",
+    subtitle: "Rainfall data (last 2 years)"
+  },
+  th: {
+    title: "ปริมาณน้ำฝน จังหวัดขอนแก่น",
+    subtitle: "ข้อมูลปริมาณน้ำฝนย้อนหลัง 2 ปี"
+  },
+  ja: {
+    title: "コンケン県の降水量",
+    subtitle: "過去2年間の降水量データ"
+  },
+  zh: {
+    title: "孔敬府降雨量",
+    subtitle: "过去两年的降雨数据"
+  }
+};
 
-    for (let i = 0; i <= 730; i++) {
-      const d = new Date(startDate);
-      d.setDate(startDate.getDate() + i);
-      rainfallData.push({
-        date: d.toISOString().split('T')[0],
-        rain: +(Math.random() * 50).toFixed(1) // ค่าสุ่มตัวอย่าง (มม.)
-      });
-    }
+function setLang(lang) {
+  document.getElementById("title").innerText = text[lang].title;
+  document.getElementById("subtitle").innerText = text[lang].subtitle;
+}
 
-    // ===== สร้างกราฟ =====
-    const ctx = document.getElementById('rainChart');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: rainfallData.map(d => d.date),
-        datasets: [{
-          label: 'มิลลิเมตร (mm)',
-          data: rainfallData.map(d => d.rain)
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: {
-            beginAtZero: true
-          }
-        }
-      }
-    });
+const ctx = document.getElementById("rainChart");
+new Chart(ctx, {
+  type: "bar",
+  data: {
+    labels: ["2023", "2024"],
+    datasets: [{
+      label: "mm",
+      data: [1200, 1350]
+    }]
+  }
+});
+</script>
 
-    // ===== เติมข้อมูลในตาราง =====
-    const table = document.getElementById('rainTable');
-    rainfallData.forEach(d => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${d.date}</td><td>${d.rain}</td>`;
-      table.appendChild(tr);
-    });
-  </script>
 </body>
 </html>
