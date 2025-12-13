@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ปริมาณน้ำฝน จังหวัดขอนแก่น</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      text-align: center;
+    }
+    th {
+      background: #f0f2f5;
+    }
+  </style>
+</head>
+<body>
+  <h1>ปริมาณน้ำฝน จังหวัดขอนแก่น</h1>
+  <div class="subtitle">ตัวอย่างหน้าเว็บแสดงข้อมูลคล้าย dane.meteomodel.pl</div>
+
+  <div class="card">
+    <h3>กราฟปริมาณน้ำฝน (มม.) รายวัน</h3>
+    <canvas id="rainChart" height="100"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>ตารางข้อมูลน้ำฝน</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>วันที่</th>
+          <th>ปริมาณน้ำฝน (มม.)</th>
+        </tr>
+      </thead>
+      <tbody id="rainTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // ===== ตัวอย่างข้อมูลย้อนหลัง 2 ปี (ข้อมูลจำลอง) =====
+    // หมายเหตุ: ภายหลังสามารถแทนที่ด้วยข้อมูลจริงจาก API หรือไฟล์ CSV
+    const rainfallData = [];
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() - 2);
+
+    for (let i = 0; i <= 730; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      rainfallData.push({
+        date: d.toISOString().split('T')[0],
+        rain: +(Math.random() * 50).toFixed(1) // ค่าสุ่มตัวอย่าง (มม.)
+      });
+    }
+
+    // ===== สร้างกราฟ =====
+    const ctx = document.getElementById('rainChart');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: rainfallData.map(d => d.date),
+        datasets: [{
+          label: 'มิลลิเมตร (mm)',
+          data: rainfallData.map(d => d.rain)
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // ===== เติมข้อมูลในตาราง =====
+    const table = document.getElementById('rainTable');
+    rainfallData.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${d.date}</td><td>${d.rain}</td>`;
+      table.appendChild(tr);
+    });
+  </script>
+</body>
+</html>
