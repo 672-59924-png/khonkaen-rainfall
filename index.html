@@ -3,47 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>
-  <p id="subtitle">
-  ข้อมูลปริมาณน้ำฝนย้อนหลัง โดยอิงข้อมูลจากสถานีอุตุนิยมวิทยา จังหวัดขอนแก่น
-</p></title>
+<title>Khon Kaen Rainfall</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-  font-family: system-ui, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 20px;
+body{
+  font-family:system-ui,sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:20px;
 }
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
 }
-select {
-  padding: 6px;
+select{padding:6px}
+.card{
+  background:#fff;
+  padding:16px;
+  border-radius:10px;
+  margin-top:20px;
 }
-.card {
-  background: white;
-  padding: 16px;
-  border-radius: 10px;
-  margin-top: 20px;
+table{
+  width:100%;
+  border-collapse:collapse;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
+th,td{
+  padding:6px;
+  border-bottom:1px solid #ddd;
+  text-align:center;
 }
-th, td {
-  padding: 6px;
-  border-bottom: 1px solid #ddd;
-  text-align: center;
-}
-th {
-  background: #eee;
-}
+th{background:#eee}
 </style>
 </head>
 
@@ -52,7 +45,7 @@ th {
 <div class="top">
   <h1 id="title">ปริมาณน้ำฝน จังหวัดขอนแก่น</h1>
   <div>
-    <select id="lang" onchange="setLang(this.value)">
+    <select onchange="setLang(this.value)">
       <option value="th">ไทย</option>
       <option value="en">English</option>
       <option value="ja">日本語</option>
@@ -60,13 +53,14 @@ th {
     </select>
 
     <select id="range" onchange="render()">
-      <option value="7">7 days</option>
-      <option value="30" selected>30 days</option>
-      <option value="90">90 days</option>
-      <option value="150">150 days</option>
-      <option value="365">365 days</option>
-      <option value="500">500 days</option>
-      <option value="730" selected>2 years (730 days)</option>
+      <option value="7">7</option>
+      <option value="30">30</option>
+      <option value="90">90</option>
+      <option value="120">120</option>
+      <option value="150">150</option>
+      <option value="365">365</option>
+      <option value="500">500</option>
+      <option value="730" selected>730</option>
     </select>
 
     <select id="mode" onchange="render()">
@@ -76,19 +70,21 @@ th {
   </div>
 </div>
 
-<p id="subtitle">ข้อมูลปริมาณน้ำฝนย้อนหลัง</p>
+<p id="subtitle">
+ข้อมูลปริมาณน้ำฝนย้อนหลัง โดยอิงข้อมูลจากสถานีอุตุนิยมวิทยา จังหวัดขอนแก่น
+</p>
 
 <div class="card">
   <canvas id="chart"></canvas>
 </div>
 
 <div class="card">
-  <h3>ตารางข้อมูลรายวัน</h3>
+  <h3 id="tableTitle">ตารางข้อมูลรายวัน</h3>
   <table>
     <thead>
       <tr>
-        <th>วันที่</th>
-        <th>ปริมาณฝน (มม.)</th>
+        <th id="thDate">วันที่</th>
+        <th id="thRain">ปริมาณฝน (มม.)</th>
       </tr>
     </thead>
     <tbody id="table"></tbody>
@@ -97,18 +93,46 @@ th {
 
 <script>
 /* ---------- ภาษา ---------- */
-const T = {
-  th:{title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง"},
-  en:{title:"Rainfall in Khon Kaen",sub:"Historical rainfall data"},
-  ja:{title:"コンケン県の降水量",sub:"過去の降水量データ"},
-  zh:{title:"孔敬府降雨量",sub:"历史降雨数据"}
+const T={
+  th:{
+    title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",
+    sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง โดยอิงข้อมูลจากสถานีอุตุนิยมวิทยา จังหวัดขอนแก่น",
+    table:"ตารางข้อมูลรายวัน",
+    date:"วันที่",
+    rain:"ปริมาณฝน (มม.)"
+  },
+  en:{
+    title:"Rainfall in Khon Kaen",
+    sub:"Rainfall data based on Khon Kaen Meteorological Station",
+    table:"Daily Rainfall Table",
+    date:"Date",
+    rain:"Rainfall (mm)"
+  },
+  ja:{
+    title:"コンケン県の降水量",
+    sub:"コンケン気象観測所のデータに基づく降水量",
+    table:"日別降水量表",
+    date:"日付",
+    rain:"降水量 (mm)"
+  },
+  zh:{
+    title:"孔敬府降雨量",
+    sub:"基于孔敬气象站的数据",
+    table:"每日降雨数据表",
+    date:"日期",
+    rain:"降雨量 (毫米)"
+  }
 };
+
 function setLang(l){
   title.innerText=T[l].title;
   subtitle.innerText=T[l].sub;
+  tableTitle.innerText=T[l].table;
+  thDate.innerText=T[l].date;
+  thRain.innerText=T[l].rain;
 }
 
-/* ---------- สร้างข้อมูลรายวันย้อนหลัง 2 ปี (จำลอง) ---------- */
+/* ---------- ข้อมูลย้อนหลัง 2 ปี (จำลอง อิงสถานีขอนแก่น) ---------- */
 const ALL=[];
 const today=new Date();
 for(let i=730;i>=0;i--){
@@ -126,7 +150,6 @@ let chart;
 function render(){
   const days=+range.value;
   const mode=document.getElementById("mode").value;
-
   let data=ALL.slice(-days);
 
   if(mode==="monthly"){
@@ -135,12 +158,14 @@ function render(){
       const m=d.date.slice(0,7);
       map[m]=(map[m]||0)+d.rain;
     });
-    data=Object.keys(map).map(k=>({date:k,rain:+map[k].toFixed(1)}));
+    data=Object.keys(map).map(k=>({
+      date:k,
+      rain:+map[k].toFixed(1)
+    }));
   }
 
-  // chart
   if(chart) chart.destroy();
-  chart=new Chart(document.getElementById("chart"),{
+  chart=new Chart(chartCanvas,{
     type:"bar",
     data:{
       labels:data.map(d=>d.date),
@@ -155,14 +180,13 @@ function render(){
     }
   });
 
-  // table
-  const tb=document.getElementById("table");
-  tb.innerHTML="";
+  table.innerHTML="";
   data.forEach(d=>{
-    tb.innerHTML+=`<tr><td>${d.date}</td><td>${d.rain}</td></tr>`;
+    table.innerHTML+=`<tr><td>${d.date}</td><td>${d.rain}</td></tr>`;
   });
 }
 
+const chartCanvas=document.getElementById("chart");
 render();
 </script>
 
