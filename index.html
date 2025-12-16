@@ -1,76 +1,75 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Khon Kaen Rainfall</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-:root{
-  --bg:#f4f6f8; --card:#fff; --text:#000;
-}
-.dark{
-  --bg:#111; --card:#1e1e1e; --text:#fff;
-}
-body{
-  font-family:system-ui,sans-serif;
-  background:var(--bg); color:var(--text);
-  margin:0; padding:20px;
-}
-.top{
-  display:flex; justify-content:space-between;
-  flex-wrap:wrap; gap:10px;
-}
+body{font-family:system-ui;background:#f4f6f8;margin:0;padding:20px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.card{background:#fff;padding:16px;border-radius:12px;margin-top:20px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:#eee;padding:12px;border-radius:10px;text-align:center}
+table{width:100%;border-collapse:collapse}
+th,td{padding:6px;border-bottom:1px solid #ddd;text-align:center}
+th{background:#eee}
 select,button{padding:6px}
-.card{
-  background:var(--card);
-  padding:16px; border-radius:10px;
-  margin-top:20px;
-}
-.stats{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:10px;
-}
-.stat{
-  background:rgba(0,0,0,.05);
-  padding:10px; border-radius:8px;
-  text-align:center;
-}
-table{width:100%; border-collapse:collapse}
-th,td{padding:6px; border-bottom:1px solid #ccc; text-align:center}
 </style>
 </head>
 
 <body>
+
 <div class="top">
-  <h1 id="title"></h1>
+  <h1 id="title">ปริมาณน้ำฝน จังหวัดขอนแก่น</h1>
   <div>
-    <select id="lang"></select>
-    <select id="range"></select>
-    <select id="mode">
+    <select id="lang" onchange="setLang(this.value)">
+      <option value="th">TH</option>
+      <option value="en">EN</option>
+    </select>
+
+    <select id="range" onchange="render()">
+      <option value="7">7</option>
+      <option value="30">30</option>
+      <option value="90">90</option>
+      <option value="120">120</option>
+      <option value="150">150</option>
+      <option value="365">365</option>
+      <option value="500">500</option>
+      <option value="730" selected>730</option>
+    </select>
+
+    <select id="mode" onchange="render()">
       <option value="daily">Daily</option>
       <option value="monthly">Monthly</option>
     </select>
-    <button onclick="toggleDark()">🌙</button>
-    <button onclick="exportCSV()">⬇ CSV</button>
   </div>
 </div>
 
-<p id="subtitle"></p>
+<p id="subtitle">
+ข้อมูลปริมาณน้ำฝนย้อนหลัง (อ้างอิงสถานีอุตุนิยมวิทยาขอนแก่น)
+</p>
 
 <div class="stats">
-  <div class="stat"><div id="s_total">-</div><small id="l_total"></small></div>
-  <div class="stat"><div id="s_avg">-</div><small id="l_avg"></small></div>
-  <div class="stat"><div id="s_max">-</div><small id="l_max"></small></div>
+  <div class="stat"><div id="sum">0</div><small id="tSum">ฝนรวม</small></div>
+  <div class="stat"><div id="avg">0</div><small id="tAvg">เฉลี่ย/วัน</small></div>
+  <div class="stat"><div id="max">0</div><small id="tMax">มากสุด</small></div>
 </div>
 
-<div class="card"><canvas id="chart"></canvas></div>
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
 
 <div class="card">
-  <h3 id="tableTitle"></h3>
+  <h3 id="tableTitle">ตารางข้อมูล</h3>
   <table>
-    <thead><tr><th id="th_date"></th><th id="th_rain"></th></tr></thead>
+    <thead>
+      <tr>
+        <th id="thDate">วันที่</th>
+        <th id="thRain">มม.</th>
+      </tr>
+    </thead>
     <tbody id="table"></tbody>
   </table>
 </div>
@@ -78,63 +77,41 @@ th,td{padding:6px; border-bottom:1px solid #ccc; text-align:center}
 <script>
 /* ---------- ภาษา ---------- */
 const T={
-th:{title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",
-sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง (อิงแนวคิดจากสถานีอุตุนิยมวิทยาขอนแก่น)",
-total:"ฝนรวม",avg:"เฉลี่ย/วัน",max:"มากสุด",
-date:"วันที่",rain:"มม.",table:"ตารางข้อมูล"},
-en:{title:"Rainfall in Khon Kaen",
-sub:"Historical rainfall data (based on Khon Kaen Meteorological Station)",
-total:"Total",avg:"Average/day",max:"Max",
-date:"Date",rain:"mm",table:"Data table"},
-ja:{title:"コンケン県の降水量",
-sub:"コンケン気象観測所に基づく降水量データ",
-total:"合計",avg:"平均",max:"最大",
-date:"日付",rain:"mm",table:"データ表"},
-zh:{title:"孔敬府降雨量",
-sub:"基于孔敬气象站的数据",
-total:"总量",avg:"平均",max:"最大",
-date:"日期",rain:"毫米",table:"数据表"}
+  th:{title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง",sum:"ฝนรวม",avg:"เฉลี่ย/วัน",max:"มากสุด",table:"ตารางข้อมูล",date:"วันที่"},
+  en:{title:"Rainfall in Khon Kaen",sub:"Historical rainfall data",sum:"Total",avg:"Avg/day",max:"Max",table:"Data table",date:"Date"}
 };
+function setLang(l){
+  title.innerText=T[l].title;
+  subtitle.innerText=T[l].sub;
+  tSum.innerText=T[l].sum;
+  tAvg.innerText=T[l].avg;
+  tMax.innerText=T[l].max;
+  tableTitle.innerText=T[l].table;
+  thDate.innerText=T[l].date;
+}
 
-/* ---------- UI setup ---------- */
-const langSel=lang;
-["th","en","ja","zh"].forEach(l=>{
-  langSel.innerHTML+=`<option value="${l}">${l.toUpperCase()}</option>`;
-});
-[7,30,90,120,150,365,500,730].forEach(d=>{
-  range.innerHTML+=`<option value="${d}">${d} days</option>`;
-});
-
-/* ---------- data (จำลอง 2 ปี) ---------- */
+/* ---------- สร้างข้อมูลย้อนหลัง 2 ปี (จำลองใกล้เคียงจริง) ---------- */
 const ALL=[];
 const today=new Date();
-for(let i=730;i>=0;i--){
+for(let i=729;i>=0;i--){
   const d=new Date(today);
   d.setDate(d.getDate()-i);
-  ALL.push({
-    date:d.toISOString().slice(0,10),
-    rain:+(Math.random()*40).toFixed(1)
-  });
+  const month=d.getMonth()+1;
+  let rain=0;
+  if(month>=5&&month<=10){
+    rain=Math.random()*40;
+  }else{
+    rain=Math.random()*5;
+  }
+  ALL.push({date:d.toISOString().slice(0,10),rain:+rain.toFixed(1)});
 }
 
 let chart;
 
 /* ---------- render ---------- */
 function render(){
-  const l=langSel.value;
   const days=+range.value;
   const mode=document.getElementById("mode").value;
-  const t=T[l];
-
-  title.innerText=t.title;
-  subtitle.innerText=t.sub;
-  l_total.innerText=t.total;
-  l_avg.innerText=t.avg;
-  l_max.innerText=t.max;
-  th_date.innerText=t.date;
-  th_rain.innerText=t.rain;
-  tableTitle.innerText=t.table;
-
   let data=ALL.slice(-days);
 
   if(mode==="monthly"){
@@ -146,57 +123,24 @@ function render(){
     data=Object.entries(m).map(([k,v])=>({date:k,rain:+v.toFixed(1)}));
   }
 
-  // stats
-  const total=data.reduce((a,b)=>a+b.rain,0);
-  s_total.innerText=total.toFixed(1);
-  s_avg.innerText=(total/data.length).toFixed(1);
-  s_max.innerText=Math.max(...data.map(d=>d.rain)).toFixed(1);
+  sum.innerText=data.reduce((a,b)=>a+b.rain,0).toFixed(1);
+  avg.innerText=(data.reduce((a,b)=>a+b.rain,0)/data.length).toFixed(1);
+  max.innerText=Math.max(...data.map(d=>d.rain)).toFixed(1);
 
-  // chart
   if(chart) chart.destroy();
-  chart=new Chart(chartEl,{
+  chart=new Chart(chart=document.getElementById("chart"),{
     type:"bar",
-    data:{labels:data.map(d=>d.date),
-      datasets:[{label:t.rain,data:data.map(d=>d.rain)}]},
+    data:{labels:data.map(d=>d.date),datasets:[{data:data.map(d=>d.rain)}]},
     options:{responsive:true,scales:{y:{beginAtZero:true}}}
   });
 
-  // table
   table.innerHTML="";
   data.forEach(d=>{
     table.innerHTML+=`<tr><td>${d.date}</td><td>${d.rain}</td></tr>`;
   });
-
-  save();
 }
 
-/* ---------- extra ---------- */
-function exportCSV(){
-  let csv="date,rain\n";
-  document.querySelectorAll("#table tr").forEach(r=>{
-    csv+=r.innerText.replace("\t",",")+"\n";
-  });
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv]));
-  a.download="rainfall.csv";
-  a.click();
-}
-function toggleDark(){
-  document.body.classList.toggle("dark");
-  localStorage.dark=document.body.classList.contains("dark");
-}
-function save(){
-  localStorage.lang=langSel.value;
-  localStorage.range=range.value;
-  localStorage.mode=mode.value;
-}
-function load(){
-  if(localStorage.dark==="true") document.body.classList.add("dark");
-  langSel.value=localStorage.lang||"th";
-  range.value=localStorage.range||"30";
-  mode.value=localStorage.mode||"daily";
-}
-load(); render();
+render();
 </script>
 </body>
 </html>
