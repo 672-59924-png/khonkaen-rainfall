@@ -7,86 +7,70 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+:root{
+  --bg:#f4f6f8; --card:#fff; --text:#000;
+}
+.dark{
+  --bg:#111; --card:#1e1e1e; --text:#fff;
+}
 body{
   font-family:system-ui,sans-serif;
-  background:#f4f6f8;
-  margin:0;
-  padding:20px;
+  background:var(--bg); color:var(--text);
+  margin:0; padding:20px;
 }
 .top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  flex-wrap:wrap;
-  gap:10px;
+  display:flex; justify-content:space-between;
+  flex-wrap:wrap; gap:10px;
 }
-select{padding:6px}
+select,button{padding:6px}
 .card{
-  background:#fff;
-  padding:16px;
-  border-radius:10px;
+  background:var(--card);
+  padding:16px; border-radius:10px;
   margin-top:20px;
 }
-table{
-  width:100%;
-  border-collapse:collapse;
+.stats{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;
 }
-th,td{
-  padding:6px;
-  border-bottom:1px solid #ddd;
+.stat{
+  background:rgba(0,0,0,.05);
+  padding:10px; border-radius:8px;
   text-align:center;
 }
-th{background:#eee}
+table{width:100%; border-collapse:collapse}
+th,td{padding:6px; border-bottom:1px solid #ccc; text-align:center}
 </style>
 </head>
 
 <body>
-
 <div class="top">
-  <h1 id="title">ปริมาณน้ำฝน จังหวัดขอนแก่น</h1>
+  <h1 id="title"></h1>
   <div>
-    <select onchange="setLang(this.value)">
-      <option value="th">ไทย</option>
-      <option value="en">English</option>
-      <option value="ja">日本語</option>
-      <option value="zh">中文</option>
-    </select>
-
-    <select id="range" onchange="render()">
-      <option value="7">7</option>
-      <option value="30">30</option>
-      <option value="90">90</option>
-      <option value="120">120</option>
-      <option value="150">150</option>
-      <option value="365">365</option>
-      <option value="500">500</option>
-      <option value="730" selected>730</option>
-    </select>
-
-    <select id="mode" onchange="render()">
+    <select id="lang"></select>
+    <select id="range"></select>
+    <select id="mode">
       <option value="daily">Daily</option>
       <option value="monthly">Monthly</option>
     </select>
+    <button onclick="toggleDark()">🌙</button>
+    <button onclick="exportCSV()">⬇ CSV</button>
   </div>
 </div>
 
-<p id="subtitle">
-ข้อมูลปริมาณน้ำฝนย้อนหลัง โดยอิงข้อมูลจากสถานีอุตุนิยมวิทยา จังหวัดขอนแก่น
-</p>
+<p id="subtitle"></p>
 
-<div class="card">
-  <canvas id="chart"></canvas>
+<div class="stats">
+  <div class="stat"><div id="s_total">-</div><small id="l_total"></small></div>
+  <div class="stat"><div id="s_avg">-</div><small id="l_avg"></small></div>
+  <div class="stat"><div id="s_max">-</div><small id="l_max"></small></div>
 </div>
 
+<div class="card"><canvas id="chart"></canvas></div>
+
 <div class="card">
-  <h3 id="tableTitle">ตารางข้อมูลรายวัน</h3>
+  <h3 id="tableTitle"></h3>
   <table>
-    <thead>
-      <tr>
-        <th id="thDate">วันที่</th>
-        <th id="thRain">ปริมาณฝน (มม.)</th>
-      </tr>
-    </thead>
+    <thead><tr><th id="th_date"></th><th id="th_rain"></th></tr></thead>
     <tbody id="table"></tbody>
   </table>
 </div>
@@ -94,52 +78,41 @@ th{background:#eee}
 <script>
 /* ---------- ภาษา ---------- */
 const T={
-  th:{
-    title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",
-    sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง โดยอิงข้อมูลจากสถานีอุตุนิยมวิทยา จังหวัดขอนแก่น",
-    table:"ตารางข้อมูลรายวัน",
-    date:"วันที่",
-    rain:"ปริมาณฝน (มม.)"
-  },
-  en:{
-    title:"Rainfall in Khon Kaen",
-    sub:"Rainfall data based on Khon Kaen Meteorological Station",
-    table:"Daily Rainfall Table",
-    date:"Date",
-    rain:"Rainfall (mm)"
-  },
-  ja:{
-    title:"コンケン県の降水量",
-    sub:"コンケン気象観測所のデータに基づく降水量",
-    table:"日別降水量表",
-    date:"日付",
-    rain:"降水量 (mm)"
-  },
-  zh:{
-    title:"孔敬府降雨量",
-    sub:"基于孔敬气象站的数据",
-    table:"每日降雨数据表",
-    date:"日期",
-    rain:"降雨量 (毫米)"
-  }
+th:{title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",
+sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง (อิงแนวคิดจากสถานีอุตุนิยมวิทยาขอนแก่น)",
+total:"ฝนรวม",avg:"เฉลี่ย/วัน",max:"มากสุด",
+date:"วันที่",rain:"มม.",table:"ตารางข้อมูล"},
+en:{title:"Rainfall in Khon Kaen",
+sub:"Historical rainfall data (based on Khon Kaen Meteorological Station)",
+total:"Total",avg:"Average/day",max:"Max",
+date:"Date",rain:"mm",table:"Data table"},
+ja:{title:"コンケン県の降水量",
+sub:"コンケン気象観測所に基づく降水量データ",
+total:"合計",avg:"平均",max:"最大",
+date:"日付",rain:"mm",table:"データ表"},
+zh:{title:"孔敬府降雨量",
+sub:"基于孔敬气象站的数据",
+total:"总量",avg:"平均",max:"最大",
+date:"日期",rain:"毫米",table:"数据表"}
 };
 
-function setLang(l){
-  title.innerText=T[l].title;
-  subtitle.innerText=T[l].sub;
-  tableTitle.innerText=T[l].table;
-  thDate.innerText=T[l].date;
-  thRain.innerText=T[l].rain;
-}
+/* ---------- UI setup ---------- */
+const langSel=lang;
+["th","en","ja","zh"].forEach(l=>{
+  langSel.innerHTML+=`<option value="${l}">${l.toUpperCase()}</option>`;
+});
+[7,30,90,120,150,365,500,730].forEach(d=>{
+  range.innerHTML+=`<option value="${d}">${d} days</option>`;
+});
 
-/* ---------- ข้อมูลย้อนหลัง 2 ปี (จำลอง อิงสถานีขอนแก่น) ---------- */
+/* ---------- data (จำลอง 2 ปี) ---------- */
 const ALL=[];
 const today=new Date();
 for(let i=730;i>=0;i--){
   const d=new Date(today);
   d.setDate(d.getDate()-i);
   ALL.push({
-    date:d.toISOString().split("T")[0],
+    date:d.toISOString().slice(0,10),
     rain:+(Math.random()*40).toFixed(1)
   });
 }
@@ -148,47 +121,82 @@ let chart;
 
 /* ---------- render ---------- */
 function render(){
+  const l=langSel.value;
   const days=+range.value;
   const mode=document.getElementById("mode").value;
+  const t=T[l];
+
+  title.innerText=t.title;
+  subtitle.innerText=t.sub;
+  l_total.innerText=t.total;
+  l_avg.innerText=t.avg;
+  l_max.innerText=t.max;
+  th_date.innerText=t.date;
+  th_rain.innerText=t.rain;
+  tableTitle.innerText=t.table;
+
   let data=ALL.slice(-days);
 
   if(mode==="monthly"){
-    const map={};
+    const m={};
     data.forEach(d=>{
-      const m=d.date.slice(0,7);
-      map[m]=(map[m]||0)+d.rain;
+      const k=d.date.slice(0,7);
+      m[k]=(m[k]||0)+d.rain;
     });
-    data=Object.keys(map).map(k=>({
-      date:k,
-      rain:+map[k].toFixed(1)
-    }));
+    data=Object.entries(m).map(([k,v])=>({date:k,rain:+v.toFixed(1)}));
   }
 
+  // stats
+  const total=data.reduce((a,b)=>a+b.rain,0);
+  s_total.innerText=total.toFixed(1);
+  s_avg.innerText=(total/data.length).toFixed(1);
+  s_max.innerText=Math.max(...data.map(d=>d.rain)).toFixed(1);
+
+  // chart
   if(chart) chart.destroy();
-  chart=new Chart(chartCanvas,{
+  chart=new Chart(chartEl,{
     type:"bar",
-    data:{
-      labels:data.map(d=>d.date),
-      datasets:[{
-        label:"mm",
-        data:data.map(d=>d.rain)
-      }]
-    },
-    options:{
-      responsive:true,
-      scales:{y:{beginAtZero:true}}
-    }
+    data:{labels:data.map(d=>d.date),
+      datasets:[{label:t.rain,data:data.map(d=>d.rain)}]},
+    options:{responsive:true,scales:{y:{beginAtZero:true}}}
   });
 
+  // table
   table.innerHTML="";
   data.forEach(d=>{
     table.innerHTML+=`<tr><td>${d.date}</td><td>${d.rain}</td></tr>`;
   });
+
+  save();
 }
 
-const chartCanvas=document.getElementById("chart");
-render();
+/* ---------- extra ---------- */
+function exportCSV(){
+  let csv="date,rain\n";
+  document.querySelectorAll("#table tr").forEach(r=>{
+    csv+=r.innerText.replace("\t",",")+"\n";
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv]));
+  a.download="rainfall.csv";
+  a.click();
+}
+function toggleDark(){
+  document.body.classList.toggle("dark");
+  localStorage.dark=document.body.classList.contains("dark");
+}
+function save(){
+  localStorage.lang=langSel.value;
+  localStorage.range=range.value;
+  localStorage.mode=mode.value;
+}
+function load(){
+  if(localStorage.dark==="true") document.body.classList.add("dark");
+  langSel.value=localStorage.lang||"th";
+  range.value=localStorage.range||"30";
+  mode.value=localStorage.mode||"daily";
+}
+load(); render();
 </script>
-
 </body>
 </html>
