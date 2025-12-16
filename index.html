@@ -1,21 +1,57 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Khon Kaen Rainfall</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{font-family:system-ui;background:#f4f6f8;margin:0;padding:20px}
-.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.card{background:#fff;padding:16px;border-radius:12px;margin-top:20px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.stat{background:#eee;padding:12px;border-radius:10px;text-align:center}
-table{width:100%;border-collapse:collapse}
-th,td{padding:6px;border-bottom:1px solid #ddd;text-align:center}
-th{background:#eee}
-select,button{padding:6px}
+body{
+  font-family:system-ui,sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:20px;
+}
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+}
+select{
+  padding:6px;
+}
+.card{
+  background:#fff;
+  padding:16px;
+  border-radius:10px;
+  margin-top:20px;
+}
+.stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+}
+.stat{
+  background:#eee;
+  padding:12px;
+  border-radius:8px;
+  text-align:center;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:6px;
+  border-bottom:1px solid #ddd;
+  text-align:center;
+}
+th{
+  background:#eee;
+}
 </style>
 </head>
 
@@ -30,14 +66,13 @@ select,button{padding:6px}
     </select>
 
     <select id="range" onchange="render()">
-      <option value="7">7</option>
-      <option value="30">30</option>
-      <option value="90">90</option>
-      <option value="120">120</option>
-      <option value="150">150</option>
-      <option value="365">365</option>
-      <option value="500">500</option>
-      <option value="730" selected>730</option>
+      <option value="7">7 days</option>
+      <option value="30">30 days</option>
+      <option value="90">90 days</option>
+      <option value="150">150 days</option>
+      <option value="365">365 days</option>
+      <option value="500">500 days</option>
+      <option value="730" selected>730 days</option>
     </select>
 
     <select id="mode" onchange="render()">
@@ -48,13 +83,22 @@ select,button{padding:6px}
 </div>
 
 <p id="subtitle">
-ข้อมูลปริมาณน้ำฝนย้อนหลัง (อ้างอิงสถานีอุตุนิยมวิทยาขอนแก่น)
+ข้อมูลปริมาณน้ำฝนย้อนหลัง (อิงแนวโน้มสถานีอุตุนิยมวิทยาขอนแก่น)
 </p>
 
 <div class="stats">
-  <div class="stat"><div id="sum">0</div><small id="tSum">ฝนรวม</small></div>
-  <div class="stat"><div id="avg">0</div><small id="tAvg">เฉลี่ย/วัน</small></div>
-  <div class="stat"><div id="max">0</div><small id="tMax">มากสุด</small></div>
+  <div class="stat">
+    <div id="tSum">ฝนรวม</div>
+    <b><span id="sum">0</span> <span id="unit">มม.</span></b>
+  </div>
+  <div class="stat">
+    <div id="tAvg">เฉลี่ย/วัน</div>
+    <b><span id="avg">0</span> <span id="unit2">มม.</span></b>
+  </div>
+  <div class="stat">
+    <div id="tMax">มากสุด</div>
+    <b><span id="max">0</span> <span id="unit3">มม.</span></b>
+  </div>
 </div>
 
 <div class="card">
@@ -67,7 +111,7 @@ select,button{padding:6px}
     <thead>
       <tr>
         <th id="thDate">วันที่</th>
-        <th id="thRain">มม.</th>
+        <th><span id="unitTable">มม.</span></th>
       </tr>
     </thead>
     <tbody id="table"></tbody>
@@ -77,9 +121,28 @@ select,button{padding:6px}
 <script>
 /* ---------- ภาษา ---------- */
 const T={
-  th:{title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง",sum:"ฝนรวม",avg:"เฉลี่ย/วัน",max:"มากสุด",table:"ตารางข้อมูล",date:"วันที่"},
-  en:{title:"Rainfall in Khon Kaen",sub:"Historical rainfall data",sum:"Total",avg:"Avg/day",max:"Max",table:"Data table",date:"Date"}
+  th:{
+    title:"ปริมาณน้ำฝน จังหวัดขอนแก่น",
+    sub:"ข้อมูลปริมาณน้ำฝนย้อนหลัง (อิงแนวโน้มสถานีอุตุนิยมวิทยาขอนแก่น)",
+    sum:"ฝนรวม",
+    avg:"เฉลี่ย/วัน",
+    max:"มากสุด",
+    table:"ตารางข้อมูล",
+    date:"วันที่",
+    unit:"มม."
+  },
+  en:{
+    title:"Rainfall in Khon Kaen",
+    sub:"Historical rainfall data (based on Khon Kaen meteorological station trend)",
+    sum:"Total",
+    avg:"Avg/day",
+    max:"Max",
+    table:"Data table",
+    date:"Date",
+    unit:"mm"
+  }
 };
+
 function setLang(l){
   title.innerText=T[l].title;
   subtitle.innerText=T[l].sub;
@@ -88,22 +151,28 @@ function setLang(l){
   tMax.innerText=T[l].max;
   tableTitle.innerText=T[l].table;
   thDate.innerText=T[l].date;
+  unit.innerText=T[l].unit;
+  unit2.innerText=T[l].unit;
+  unit3.innerText=T[l].unit;
+  unitTable.innerText=T[l].unit;
 }
 
-/* ---------- สร้างข้อมูลย้อนหลัง 2 ปี (จำลองใกล้เคียงจริง) ---------- */
+/* ---------- ข้อมูลจำลองย้อนหลัง 2 ปี ---------- */
 const ALL=[];
 const today=new Date();
-for(let i=729;i>=0;i--){
+for(let i=730;i>=0;i--){
   const d=new Date(today);
   d.setDate(d.getDate()-i);
-  const month=d.getMonth()+1;
-  let rain=0;
-  if(month>=5&&month<=10){
-    rain=Math.random()*40;
-  }else{
-    rain=Math.random()*5;
-  }
-  ALL.push({date:d.toISOString().slice(0,10),rain:+rain.toFixed(1)});
+
+  // จำลองฤดูฝนแบบอีสาน
+  const m=d.getMonth()+1;
+  let rain=Math.random()*5;
+  if(m>=5 && m<=10) rain+=Math.random()*25;
+
+  ALL.push({
+    date:d.toISOString().split("T")[0],
+    rain:+rain.toFixed(1)
+  });
 }
 
 let chart;
@@ -111,36 +180,51 @@ let chart;
 /* ---------- render ---------- */
 function render(){
   const days=+range.value;
-  const mode=document.getElementById("mode").value;
+  const mode=modeSel.value;
   let data=ALL.slice(-days);
 
   if(mode==="monthly"){
-    const m={};
+    const map={};
     data.forEach(d=>{
       const k=d.date.slice(0,7);
-      m[k]=(m[k]||0)+d.rain;
+      map[k]=(map[k]||0)+d.rain;
     });
-    data=Object.entries(m).map(([k,v])=>({date:k,rain:+v.toFixed(1)}));
+    data=Object.keys(map).map(k=>({
+      date:k,
+      rain:+map[k].toFixed(1)
+    }));
   }
 
-  sum.innerText=data.reduce((a,b)=>a+b.rain,0).toFixed(1);
-  avg.innerText=(data.reduce((a,b)=>a+b.rain,0)/data.length).toFixed(1);
+  // stats
+  const total=data.reduce((s,d)=>s+d.rain,0);
+  sum.innerText=total.toFixed(1);
+  avg.innerText=(total/data.length).toFixed(1);
   max.innerText=Math.max(...data.map(d=>d.rain)).toFixed(1);
 
+  // chart
   if(chart) chart.destroy();
-  chart=new Chart(chart=document.getElementById("chart"),{
+  chart=new Chart(chartEl,{
     type:"bar",
-    data:{labels:data.map(d=>d.date),datasets:[{data:data.map(d=>d.rain)}]},
+    data:{
+      labels:data.map(d=>d.date),
+      datasets:[{label:T[lang.value].unit,data:data.map(d=>d.rain)}]
+    },
     options:{responsive:true,scales:{y:{beginAtZero:true}}}
   });
 
+  // table
   table.innerHTML="";
-  data.forEach(d=>{
+  data.slice().reverse().forEach(d=>{
     table.innerHTML+=`<tr><td>${d.date}</td><td>${d.rain}</td></tr>`;
   });
 }
 
+const chartEl=document.getElementById("chart");
+const modeSel=document.getElementById("mode");
+
+setLang("th");
 render();
 </script>
+
 </body>
 </html>
